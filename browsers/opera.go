@@ -2,9 +2,9 @@ package browsers
 
 func Opera() BrowserConfig {
 	credentials := BrowserConfig{
-		Browser: "opera",
+		Browser:     "opera",
 		Credentials: []Credential{},
-	};
+	}
 
-	return credentials;
+	return credentials
 }
