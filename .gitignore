@@ -1,4 +1,6 @@
 .env
+config.prop
+go.sum
 
 data/
-go.sum
+build/

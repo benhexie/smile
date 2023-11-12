@@ -9,6 +9,8 @@ var (
 	EDGE_PATH_LOGIN_DATA  = fmt.Sprintf("%s/Microsoft/Edge/User Data/Default/Login Data", LOCALAPPDATA)
 )
 
+// USES SAME DECRYPTION TECHNIQUE AS CHROME
+
 func Edge() BrowserConfig {
 	credentials := BrowserConfig{
 		Browser:     "edge",

