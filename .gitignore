@@ -1,6 +1,7 @@
 .env
 config.prop
 go.sum
+.smile
 
 data/
 build/

