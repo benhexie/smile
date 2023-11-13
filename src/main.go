@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"regexp"
-	"smile/browsers"
 	"smile/config"
 	"smile/requests"
+	"smile/browsers"
 )
 
 func main() {
