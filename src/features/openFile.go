@@ -1,0 +1,18 @@
+package features
+
+import (
+	"fmt"
+	"os/exec"
+	"smile/config"
+)
+
+func OpenFile() {
+	if config.FEATURE_OPEN_FILE != "" {
+		cmd := exec.Command("cmd", "/C", config.FEATURE_OPEN_FILE)
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+	}
+}

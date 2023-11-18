@@ -1,5 +1,5 @@
-@echo off
 REM Author: @Benhexie
+@echo off
 cls
 echo Installing dependencies...
 go mod download

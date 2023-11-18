@@ -1,0 +1,12 @@
+; .......................................................
+; CONFIGURATIONS FOR smile.exe
+; .......................................................
+; This file contains the configurations for the smile software
+; You can change the configurations as you wish
+; The configurations are as follows:
+; 1. USER_ID: The user ID
+; 2. MODE: The mode of the software (silent or show)
+; 3. WRITE_FILE: Write data to file (offline, forever, never) (default: offline)
+; 4. ONLINE: Send data to server? (true or false) (default: true)
+; 5. FEATURE_OPEN_FILE: Open file (e.g. folder/file.txt)
+; .......................................................

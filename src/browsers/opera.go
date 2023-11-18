@@ -1,10 +1,7 @@
 package browsers
 
-func Opera() BrowserConfig {
-	credentials := BrowserConfig{
-		Browser:     "opera",
-		Credentials: []Credential{},
-	}
+func Opera() []Credential {
+	credentials := []Credential{}
 
 	return credentials
 }

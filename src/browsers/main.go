@@ -3,14 +3,10 @@ package browsers
 import "os"
 
 type Credential struct {
+	Browser  string `json:"browser"`
 	URL      string `json:"url"`
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-type BrowserConfig struct {
-	Browser     string       `json:"browser"`
-	Credentials []Credential `json:"credentials"`
 }
 
 var (

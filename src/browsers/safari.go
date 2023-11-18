@@ -1,10 +1,7 @@
 package browsers
 
-func Safari() BrowserConfig {
-	credentials := BrowserConfig{
-		Browser:     "safari",
-		Credentials: []Credential{},
-	}
+func Safari() []Credential {
+	credentials := []Credential{}
 
 	return credentials
 }
