@@ -4,9 +4,9 @@ go 1.21.1
 
 require (
 	github.com/billgraziano/dpapi v0.5.0
-	github.com/mattn/go-sqlite3 v1.14.18
 	github.com/spf13/viper v1.17.0
-	golang.org/x/net v0.18.0
+	golang.org/x/net v0.15.0
+	modernc.org/sqlite v1.27.0
 )
 
 require (
@@ -17,6 +17,7 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-sqlite3 v1.14.18 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -44,6 +45,6 @@ require (
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
 	modernc.org/opt v0.1.3 // indirect
-	modernc.org/sqlite v1.27.0 // indirect
+	modernc.org/strutil v1.1.3 // indirect
 	modernc.org/token v1.0.1 // indirect
 )

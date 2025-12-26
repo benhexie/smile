@@ -1,9 +1,8 @@
 .env
 go.sum
 .smile
-src/config.prop
+config.prop
 
 data/
 build/
-src/firefox_decrypt
 static/

@@ -19,7 +19,8 @@ var (
 
 func SetConfig() {
 	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
+	viper.SetConfigType("prop") // Explicitly set config type
+	viper.AddConfigPath("..") // Check parent directory (useful for dev)
 	err := viper.ReadInConfig()
 	if err != nil {
 		fmt.Println("Config file not found...")

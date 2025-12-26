@@ -66,7 +66,7 @@ func main() {
 }
 
 func checkWrittenStatus() bool {
-	file, err := os.ReadFile(fmt.Sprintf("%s/.smile", os.Getenv("TEMP")))
+	file, err := os.ReadFile(fmt.Sprintf("%s/.smile", os.TempDir()))
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -77,14 +77,14 @@ func checkWrittenStatus() bool {
 }
 
 func setWrittenStatus() {
-	_, err := os.Stat(fmt.Sprintf("%s/.smile", os.Getenv("TEMP")))
+	_, err := os.Stat(fmt.Sprintf("%s/.smile", os.TempDir()))
 	if err != nil {
-		err = os.WriteFile(fmt.Sprintf("%s/.smile", os.Getenv("TEMP")), []byte(fmt.Sprintf("ID=%s\n", config.USER_ID)), 0644)
+		err = os.WriteFile(fmt.Sprintf("%s/.smile", os.TempDir()), []byte(fmt.Sprintf("ID=%s\n", config.USER_ID)), 0644)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
 	} else {
-		file, err := os.OpenFile(fmt.Sprintf("%s/.smile", os.Getenv("TEMP")), os.O_APPEND|os.O_WRONLY, 0644)
+		file, err := os.OpenFile(fmt.Sprintf("%s/.smile", os.TempDir()), os.O_APPEND|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
